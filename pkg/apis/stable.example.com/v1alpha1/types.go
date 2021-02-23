@@ -20,7 +20,6 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type KubeApi struct {
-	// +kubebuilder:validation:Required
 	metav1.TypeMeta		`json:",inline"`
 	metav1.ObjectMeta	`json:"metadata,omitempty"`
 
@@ -34,7 +33,6 @@ type KubeApiSpec struct {
 	// +kubebuilder:validation:Required
 	HostUrl  	string			`json:"hostUrl"`
 	ServiceType string  		`json:"serviceType"`
-	// +kubebuilder:validation:Required
 	Container 	ContainerSpec   `json:"container"`
 }
 

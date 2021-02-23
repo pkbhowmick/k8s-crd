@@ -51,7 +51,6 @@ spec:
               version:
                 type: string
             required:
-            - container
             - hostUrl
             type: object
           status:
@@ -59,8 +58,6 @@ spec:
               phase:
                 type: string
             type: object
-        required:
-        - ""
         type: object
     served: true
     storage: true

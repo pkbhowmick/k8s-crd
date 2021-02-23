@@ -4,12 +4,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +groupName=stable.example.com
+// +kubebuilder:validation:Optional
+// +kubebuilder:validation:MaxItems=2
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=kubeapis,singular:kubeapi,shortName=kapi,categories={api,all}
 // +kubebuilder:subresources:status
 // +kubebuilder:printcolumen:name="Version",type="string",JSONPath=".spec.version"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPATH=".spec.phase"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPATH=".metadata.creationTimestamp"
+// +kubebuilder:storageversion
 
 // +genclient
 // +genclient:noStatus

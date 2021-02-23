@@ -41,6 +41,9 @@ spec:
                     type: integer
                   image:
                     type: string
+                required:
+                - containerPort
+                - image
                 type: object
               hostUrl:
                 type: string
@@ -51,12 +54,17 @@ spec:
                 type: string
               version:
                 type: string
+            required:
+            - container
+            - hostUrl
             type: object
           status:
             properties:
               phase:
                 type: string
             type: object
+        required:
+        - ""
         type: object
     served: true
     storage: true

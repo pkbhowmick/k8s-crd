@@ -13,10 +13,19 @@ spec:
     kind: KubeApi
     listKind: KubeApiList
     plural: kubeapis
+    shortNames:
+    - kapi
     singular: kubeapi
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .spec.hostUrl
+      name: HostUrl
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -51,6 +60,7 @@ spec:
               version:
                 type: string
             required:
+            - container
             - hostUrl
             type: object
           status:
@@ -58,9 +68,12 @@ spec:
               phase:
                 type: string
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true
+    subresources: {}
 status:
   acceptedNames:
     kind: ""

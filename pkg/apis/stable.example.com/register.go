@@ -1,4 +1,4 @@
-package stable_example_comom
+package stable_example_com
 
 const (
 	GroupName = "stable.example.com"

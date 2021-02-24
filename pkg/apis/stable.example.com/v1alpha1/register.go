@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var SchemaGroupVersion = schema.GroupVersion{Group: stable.GroupName,Version: "v1"}
+var SchemeGroupVersion = schema.GroupVersion{Group: stable.GroupName,Version: "v1"}
 
 var (
 	SchemaBuilder runtime.SchemeBuilder
@@ -20,18 +20,19 @@ func init()  {
 }
 
 func Resource(resource string) schema.GroupResource {
-	return SchemaGroupVersion.WithResource(resource).GroupResource()
+	return SchemeGroupVersion.WithResource(resource).GroupResource()
 }
 
 func addKnownTypes(schema *runtime.Scheme) error {
-	schema.AddKnownTypes(SchemaGroupVersion,
+	schema.AddKnownTypes(SchemeGroupVersion,
 		&KubeApi{},
 		&KubeApiList{},
 	)
-	schema.AddKnownTypes(SchemaGroupVersion,
+	schema.AddKnownTypes(SchemeGroupVersion,
 		&metav1.Status{},
 		)
 
-	metav1.AddToGroupVersion(schema, SchemaGroupVersion)
+	metav1.AddToGroupVersion(schema, SchemeGroupVersion)
 	return nil
 }
+ 

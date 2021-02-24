@@ -28,6 +28,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: KubeApi defines an Rest Api Server
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -38,26 +39,36 @@ spec:
           metadata:
             type: object
           spec:
+            description: KubeApiSpec Defines KubeApi Object spec
             properties:
               container:
+                description: Container spec of the Api server
                 properties:
                   containerPort:
+                    description: Container port of Api Server
                     format: int32
                     type: integer
                   image:
+                    description: Container image of the Api Server
                     type: string
                 required:
                 - containerPort
                 - image
                 type: object
               hostUrl:
+                description: Host url of the ingress
                 type: string
               replicas:
+                default: 1
+                description: Number of replicas of api server
                 format: int32
                 type: integer
               serviceType:
+                default: ClusterIP
+                description: Service type of the api server service
                 type: string
               version:
+                description: Version of kubeapi to be deployed
                 type: string
             required:
             - container

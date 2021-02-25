@@ -1,6 +1,8 @@
 # KubeApi
 KubeApi is a Kubernetes Custom Resource which runs REST API server in Kubernetes. 
 
+
+
 ### Available commands
 ```shell
 $ make generate         // to build the deepcopy funcs, clientset, informers, listers
@@ -113,9 +115,23 @@ metadata:
 spec:
   replicas: 2
   hostUrl: api.github.local
-  serviceType: ClusterIP
+  serviceType: NodePort
   container:
     image: pkbhowmick/go-rest-api:2.0.1
     containerPort: 8080
 ```
+ 
+### Kubebuilder markers
+- ```// +kubebuilder:object:root=true``` tells the object generator that this type represents a kind.
+- ```// +kubebuilder:subresource:status``` tells the object generator that we want a status subresource. 
+- ```// +kubebuilder:object:generator=true``` is a package level marker.
+- ```// +groupName=stable.example.com``` is a package level marker that represent the API group.
 
+### Controller
+- Controllers are the core of kubernetes, and of any operator. 
+- It's controller job to ensure that, for any given object, the actual state of the world matches the desired state in the object.
+- Each controller focuses on one root Kind, but may interact with other Kinds.
+
+### References:
+- [Kubebuilder book](https://book.kubebuilder.io/quick-start.html)
+- [Code generation for CustomResources](https://www.openshift.com/blog/kubernetes-deep-dive-code-generation-customresources)

@@ -7,15 +7,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var SchemeGroupVersion = schema.GroupVersion{Group: stable.GroupName,Version: "v1"}
+var SchemeGroupVersion = schema.GroupVersion{Group: stable.GroupName, Version: "v1alpha1"}
 
 var (
-	SchemaBuilder runtime.SchemeBuilder
+	SchemaBuilder      runtime.SchemeBuilder
 	localSchemaBuilder = &SchemaBuilder
-	AddToSchema = localSchemaBuilder.AddToScheme
+	AddToScheme        = localSchemaBuilder.AddToScheme
 )
 
-func init()  {
+func init() {
 	localSchemaBuilder.Register(addKnownTypes)
 }
 
@@ -30,9 +30,8 @@ func addKnownTypes(schema *runtime.Scheme) error {
 	)
 	schema.AddKnownTypes(SchemeGroupVersion,
 		&metav1.Status{},
-		)
+	)
 
 	metav1.AddToGroupVersion(schema, SchemeGroupVersion)
 	return nil
 }
- 

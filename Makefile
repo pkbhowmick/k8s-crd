@@ -6,7 +6,7 @@ all: generate manifests
 .PHONY: manifests generate
 # Generate manifests for CRDs
 manifests:
-	$(CONTROLLER_GEN) crd:trivialVersions=true paths="./..." output:crd:artifacts:config=config/crd/bases
+	@$(CONTROLLER_GEN) crd:trivialVersions=true paths="./..." output:crd:artifacts:config=config/crd/bases
 
 generate:
-	hack/update-codegen.sh
+	@hack/update-codegen.sh

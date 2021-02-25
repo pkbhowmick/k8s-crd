@@ -1,17 +1,17 @@
+// +groupName=stable.example.com
+// +kubebuilder:object:generator=true
 package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// +groupName=stable.example.com
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=kubeapis,singular=kubeapi,shortName=kapi,categories={}
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name=Age,type=date
 // +kubebuilder:printcolumn:JSONPath=".spec.hostUrl",name=HostUrl,type=string
 // +kubebuilder:subresources:status
 // +kubebuilder:storageversion
-
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

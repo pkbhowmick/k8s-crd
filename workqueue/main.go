@@ -97,6 +97,9 @@ func CreateDeploymentObj(obj *v1alpha1.KubeApi) *appsv1.Deployment {
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: obj.Name,
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(obj, v1alpha1.SchemeGroupVersion.WithKind("KubeApi")),
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: obj.Spec.Replicas,

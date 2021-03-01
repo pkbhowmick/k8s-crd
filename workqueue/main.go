@@ -1,18 +1,26 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"path/filepath"
 	"time"
 
+	"k8s.io/client-go/kubernetes"
+
+	"k8s.io/apimachinery/pkg/util/runtime"
+
+	"github.com/pkbhowmick/k8s-crd/pkg/apis/stable.example.com/v1alpha1"
+
+	kubeapiClientset "github.com/pkbhowmick/k8s-crd/pkg/client/clientset/versioned"
+
 	"k8s.io/client-go/util/homedir"
 
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/fields"
-
-	"k8s.io/client-go/kubernetes"
 
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -25,31 +33,45 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// Controller demonstrates how to implement a controller with client-go
 type Controller struct {
-	indexer  cache.Indexer
-	queue    workqueue.RateLimitingInterface
+	// indexer is a thread safe store to store objects and their keys
+	indexer cache.Indexer
+	// queue represents a workqueue to maintain the events coming from kubernetes api server
+	queue workqueue.RateLimitingInterface
+	// informer pops from queue to deliver to custom controller
 	informer cache.Controller
+
+	kClient   kubernetes.Interface
+	crdClient kubeapiClientset.Interface
 }
 
-func NewController(indexer cache.Indexer, queue workqueue.RateLimitingInterface, informer cache.Controller) *Controller {
+// NewController creates a new controller.
+func NewController(indexer cache.Indexer, queue workqueue.RateLimitingInterface, informer cache.Controller, kClient kubernetes.Interface, crdClient kubeapiClientset.Interface) *Controller {
 	return &Controller{
-		indexer:  indexer,
-		queue:    queue,
-		informer: informer,
+		indexer:   indexer,
+		queue:     queue,
+		informer:  informer,
+		kClient:   kClient,
+		crdClient: crdClient,
 	}
 }
 
+// processNextItem processes items from workqueue
 func (c *Controller) processNextItem() bool {
 	key, quit := c.queue.Get()
 	if quit {
 		return false
 	}
 	defer c.queue.Done(key)
+
+	// actual logic will go in below function
 	err := c.syncToStdout(key.(string))
 	c.handleErr(err, key)
 	return true
 }
 
+// syncToStdout is a major function which contains actual business logic
 func (c *Controller) syncToStdout(key string) error {
 	obj, exists, err := c.indexer.GetByKey(key)
 	if err != nil {
@@ -57,12 +79,55 @@ func (c *Controller) syncToStdout(key string) error {
 		return err
 	}
 	if !exists {
-		fmt.Printf("Pod %s does not exist anymore\n", key)
+		fmt.Printf("Kubeapi %s does not exist anymore\n", key)
 	} else {
-		fmt.Printf("Sync/Add/Update for Pod %s\n", obj.(*v1.Pod).GetName())
-		//fmt.Println("Business logic will go here")
+		//fmt.Printf("Sync/Add/Update for Kubeapi %s\n", obj.(*v1alpha1.KubeApi).GetName())
+		deepCopyObj := obj.(*v1alpha1.KubeApi).DeepCopy()
+		deployment := CreateDeploymentObj(deepCopyObj)
+		deployedObj, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Create(context.TODO(), deployment, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Deployment %q created\n", deployedObj.GetObjectMeta().GetName())
 	}
 	return nil
+}
+
+func CreateDeploymentObj(obj *v1alpha1.KubeApi) *appsv1.Deployment {
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: obj.Name,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: obj.Spec.Replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": obj.Name,
+				},
+			},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": obj.Name,
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:  obj.Name,
+							Image: obj.Spec.Container.Image,
+							Ports: []v1.ContainerPort{
+								{
+									ContainerPort: obj.Spec.Container.ContainerPort,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	return deployment
 }
 
 func (c *Controller) handleErr(err error, key interface{}) {
@@ -81,7 +146,7 @@ func (c *Controller) handleErr(err error, key interface{}) {
 }
 
 func (c *Controller) Run(threadiness int, stopCh chan struct{}) {
-	//defer runtime.HandleCrash()
+	defer runtime.HandleCrash()
 	defer c.queue.ShutDown()
 
 	klog.Info("Starting Pod controller")
@@ -89,7 +154,7 @@ func (c *Controller) Run(threadiness int, stopCh chan struct{}) {
 	go c.informer.Run(stopCh)
 
 	if !cache.WaitForCacheSync(stopCh, c.informer.HasSynced) {
-		//runtime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
+		runtime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
 		return
 	}
 
@@ -120,15 +185,20 @@ func main() {
 		klog.Fatal(err)
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := kubeapiClientset.NewForConfig(config)
 	if err != nil {
 		klog.Fatal(err)
 	}
-	podListWatcher := cache.NewListWatchFromClient(clientset.CoreV1().RESTClient(), "pods", v1.NamespaceDefault, fields.Everything())
+	var kClientset kubernetes.Interface
+	kClientset, err = kubernetes.NewForConfig(config)
+	if err != nil {
+		klog.Fatal(err)
+	}
+	kubeapiListWatcher := cache.NewListWatchFromClient(clientset.StableV1alpha1().RESTClient(), "kubeapis", v1.NamespaceDefault, fields.Everything())
 
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
-	indexer, informer := cache.NewIndexerInformer(podListWatcher, &v1.Pod{}, 0, cache.ResourceEventHandlerFuncs{
+	indexer, informer := cache.NewIndexerInformer(kubeapiListWatcher, &v1alpha1.KubeApi{}, 0, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
@@ -142,25 +212,32 @@ func main() {
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err == nil {
 				queue.Add(key)
 			}
 		},
 	}, cache.Indexers{})
+	controller := NewController(indexer, queue, informer, kClientset, clientset)
 
-	controller := NewController(indexer, queue, informer)
-
-	indexer.Add(&v1.Pod{
+	addErr := indexer.Add(&v1alpha1.KubeApi{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "mypod",
+			Name:      "test",
 			Namespace: v1.NamespaceDefault,
 		},
 	})
+
+	if addErr != nil {
+		panic(addErr)
+	}
 
 	stop := make(chan struct{})
 	defer close(stop)
 	go controller.Run(1, stop)
 
 	select {}
+}
+
+func intPtr32(i int32) *int32 {
+	return &i
 }

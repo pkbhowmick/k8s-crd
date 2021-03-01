@@ -3,6 +3,4 @@
 
 package v1alpha1
 
-import (
-	_ "k8s.io/code-generator"
-)
+// _ "k8s.io/code-generator"

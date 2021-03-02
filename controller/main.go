@@ -87,18 +87,26 @@ func (c *Controller) syncHandler(key string) error {
 		fmt.Printf("Kubeapi %s does not exist anymore\n", key)
 	} else {
 		deepCopyObj := obj.(*v1alpha1.KubeApi).DeepCopy()
+
+		// Set default value for replica count
 		if deepCopyObj.Spec.Replicas == nil {
 			deepCopyObj.Spec.Replicas = intPtr32(1)
 		}
+
+		// Get deployment to check if it already exists
 		depl, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{})
-		depl.Spec.Replicas = deepCopyObj.Spec.Replicas
+
 		if err == nil {
+			// As err is nil, so deployment already exists, then update it with new replica count
+			depl.Spec.Replicas = deepCopyObj.Spec.Replicas
 			updatedDepl, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Update(context.TODO(), depl, metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
 			fmt.Printf("Deployment %q created\n", updatedDepl.GetObjectMeta().GetName())
 		} else {
+			// As err is not nil, so deployment doesn't exist, then creating a new deployment
+
 			deployment := CreateDeploymentObj(deepCopyObj)
 			deployedObj, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Create(context.TODO(), deployment, metav1.CreateOptions{})
 			if err != nil {
@@ -106,6 +114,8 @@ func (c *Controller) syncHandler(key string) error {
 			}
 			fmt.Printf("Deployment %q created\n", deployedObj.GetObjectMeta().GetName())
 		}
+
+		// Creating the service according to deployed object
 		serviceObj := CreateServiceObj(deepCopyObj)
 		svc, err := c.kClient.CoreV1().Services(v1.NamespaceDefault).Create(context.TODO(), serviceObj, metav1.CreateOptions{})
 		if err != nil {

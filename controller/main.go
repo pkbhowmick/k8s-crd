@@ -47,7 +47,12 @@ type Controller struct {
 }
 
 // NewController creates a new controller.
-func NewController(indexer cache.Indexer, queue workqueue.RateLimitingInterface, informer cache.Controller, kClient kubernetes.Interface, crdClient kubeapiClientset.Interface) *Controller {
+func NewController(
+	indexer cache.Indexer,
+	queue workqueue.RateLimitingInterface,
+	informer cache.Controller,
+	kClient kubernetes.Interface,
+	crdClient kubeapiClientset.Interface) *Controller {
 	return &Controller{
 		indexer:   indexer,
 		queue:     queue,
@@ -81,14 +86,26 @@ func (c *Controller) syncHandler(key string) error {
 	if !exists {
 		fmt.Printf("Kubeapi %s does not exist anymore\n", key)
 	} else {
-		//fmt.Printf("Sync/Add/Update for Kubeapi %s\n", obj.(*v1alpha1.KubeApi).GetName())
 		deepCopyObj := obj.(*v1alpha1.KubeApi).DeepCopy()
-		deployment := CreateDeploymentObj(deepCopyObj)
-		deployedObj, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Create(context.TODO(), deployment, metav1.CreateOptions{})
-		if err != nil {
-			return err
+		if deepCopyObj.Spec.Replicas == nil {
+			deepCopyObj.Spec.Replicas = intPtr32(1)
 		}
-		fmt.Printf("Deployment %q created\n", deployedObj.GetObjectMeta().GetName())
+		depl, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{})
+		depl.Spec.Replicas = deepCopyObj.Spec.Replicas
+		if err == nil {
+			updatedDepl, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Update(context.TODO(), depl, metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Deployment %q created\n", updatedDepl.GetObjectMeta().GetName())
+		} else {
+			deployment := CreateDeploymentObj(deepCopyObj)
+			deployedObj, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Create(context.TODO(), deployment, metav1.CreateOptions{})
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Deployment %q created\n", deployedObj.GetObjectMeta().GetName())
+		}
 		serviceObj := CreateServiceObj(deepCopyObj)
 		svc, err := c.kClient.CoreV1().Services(v1.NamespaceDefault).Create(context.TODO(), serviceObj, metav1.CreateOptions{})
 		if err != nil {
@@ -102,7 +119,7 @@ func (c *Controller) syncHandler(key string) error {
 func CreateServiceObj(obj *v1alpha1.KubeApi) *v1.Service {
 	serviceObj := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.Name,
+			Name: obj.Spec.ServiceName,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(obj, v1alpha1.SchemeGroupVersion.WithKind("KubeApi")),
 			},
@@ -124,9 +141,6 @@ func CreateServiceObj(obj *v1alpha1.KubeApi) *v1.Service {
 }
 
 func CreateDeploymentObj(obj *v1alpha1.KubeApi) *appsv1.Deployment {
-	if obj.Spec.Replicas == nil {
-		obj.Spec.Replicas = intPtr32(1)
-	}
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: obj.Name,

@@ -89,8 +89,34 @@ func (c *Controller) syncToStdout(key string) error {
 			return err
 		}
 		fmt.Printf("Deployment %q created\n", deployedObj.GetObjectMeta().GetName())
+		serviceObj := CreateServiceObj(deepCopyObj)
+		svc, err := c.kClient.CoreV1().Services(v1.NamespaceDefault).Create(context.TODO(), serviceObj, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Service %q created\n", svc.GetObjectMeta().GetName())
 	}
 	return nil
+}
+
+func CreateServiceObj(obj *v1alpha1.KubeApi) *v1.Service {
+	serviceObj := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: obj.Name,
+		},
+		Spec: v1.ServiceSpec{
+			Selector: map[string]string{
+				"app": obj.Name,
+			},
+			Ports: []v1.ServicePort{
+				{
+					Protocol: v1.ProtocolTCP,
+					Port:     obj.Spec.Container.ContainerPort,
+				},
+			},
+		},
+	}
+	return serviceObj
 }
 
 func CreateDeploymentObj(obj *v1alpha1.KubeApi) *appsv1.Deployment {

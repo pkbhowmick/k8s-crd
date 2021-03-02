@@ -9,6 +9,8 @@ import (
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=kubeapis,singular=kubeapi,shortName=kapi,categories={}
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name=Age,type=date
+// +kubebuilder:printcolumn:JSONPath=".spec.deploymentName",name=Deployment,type=string
+// +kubebuilder:printcolumn:JSONPath=".spec.serviceName",name=Service,type=string
 // +kubebuilder:subresources:status
 // +kubebuilder:storageversion
 // +genclient
@@ -31,6 +33,9 @@ type KubeApiSpec struct {
 	// +kubebuilder:default=1
 	// +optional
 	Replicas *int32 `json:"replicas"`
+
+	DeploymentName string `json:"deploymentName"`
+	ServiceName    string `json:"serviceName"`
 
 	// +kubebuilder:default=ClusterIP
 	ServiceType ServiceType `json:"serviceType"`

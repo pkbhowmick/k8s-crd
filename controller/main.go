@@ -66,13 +66,13 @@ func (c *Controller) processNextItem() bool {
 	defer c.queue.Done(key)
 
 	// actual logic will go in below function
-	err := c.syncToStdout(key.(string))
+	err := c.syncHandler(key.(string))
 	c.handleErr(err, key)
 	return true
 }
 
 // syncToStdout is a major function which contains actual business logic
-func (c *Controller) syncToStdout(key string) error {
+func (c *Controller) syncHandler(key string) error {
 	obj, exists, err := c.indexer.GetByKey(key)
 	if err != nil {
 		klog.Errorf("Fetching object with key %s from store failed with %v", key, err)
@@ -185,7 +185,7 @@ func (c *Controller) Run(threadiness int, stopCh chan struct{}) {
 	defer runtime.HandleCrash()
 	defer c.queue.ShutDown()
 
-	klog.Info("Starting Pod controller")
+	klog.Info("Starting KubeApi controller")
 
 	go c.informer.Run(stopCh)
 

@@ -9,7 +9,6 @@ import (
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=kubeapis,singular=kubeapi,shortName=kapi,categories={}
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name=Age,type=date
-// +kubebuilder:printcolumn:JSONPath=".spec.hostUrl",name=HostUrl,type=string
 // +kubebuilder:subresources:status
 // +kubebuilder:storageversion
 // +genclient
@@ -33,14 +32,14 @@ type KubeApiSpec struct {
 	// +optional
 	Replicas *int32 `json:"replicas"`
 
-	HostUrl string `json:"hostUrl"`
-
 	// +kubebuilder:default=ClusterIP
-	// +optional
-	ServiceType string `json:"serviceType"`
+	ServiceType ServiceType `json:"serviceType"`
 
 	Container ContainerSpec `json:"container"`
 }
+
+// +kubebuilder:validation:Enum=ClusterIP;NodePort
+type ServiceType string
 
 type ContainerSpec struct {
 	// Container image of the Api Server

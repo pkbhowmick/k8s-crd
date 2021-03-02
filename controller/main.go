@@ -103,8 +103,12 @@ func CreateServiceObj(obj *v1alpha1.KubeApi) *v1.Service {
 	serviceObj := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: obj.Name,
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(obj, v1alpha1.SchemeGroupVersion.WithKind("KubeApi")),
+			},
 		},
 		Spec: v1.ServiceSpec{
+			Type: v1.ServiceType(obj.Spec.ServiceType),
 			Selector: map[string]string{
 				"app": obj.Name,
 			},

@@ -12,6 +12,7 @@ $ make manifests        // to build the manifest file for kubernetes custom reso
 ### Kubernetes Custom Resource Definition Manifest file
 Manifest file generated from above command.
 ```
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -34,13 +35,15 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    - jsonPath: .spec.hostUrl
-      name: HostUrl
+    - jsonPath: .spec.deploymentName
+      name: Deployment
+      type: string
+    - jsonPath: .spec.serviceName
+      name: Service
       type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: KubeApi defines an Rest Api Server
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -54,7 +57,6 @@ spec:
             description: KubeApiSpec Defines KubeApi Object spec
             properties:
               container:
-                description: Container spec of the Api server
                 properties:
                   containerPort:
                     description: Container port of Api Server
@@ -67,24 +69,27 @@ spec:
                 - containerPort
                 - image
                 type: object
-              hostUrl:
-                description: Host url of the ingress
+              deploymentName:
                 type: string
               replicas:
                 default: 1
-                description: Number of replicas of api server
                 format: int32
                 type: integer
+              serviceName:
+                type: string
               serviceType:
                 default: ClusterIP
-                description: Service type of the api server service
+                enum:
+                - ClusterIP
+                - NodePort
                 type: string
               version:
-                description: Version of kubeapi to be deployed
                 type: string
             required:
             - container
-            - hostUrl
+            - deploymentName
+            - serviceName
+            - serviceType
             type: object
           status:
             properties:
@@ -114,7 +119,8 @@ metadata:
   name: go-rest-api
 spec:
   replicas: 2
-  hostUrl: api.github.local
+  serviceName: myapp-service
+  deploymentName: myapp-deployment
   serviceType: NodePort
   container:
     image: pkbhowmick/go-rest-api:2.0.1
@@ -135,3 +141,4 @@ spec:
 ### References:
 - [Kubebuilder book](https://book.kubebuilder.io/quick-start.html)
 - [Code generation for CustomResources](https://www.openshift.com/blog/kubernetes-deep-dive-code-generation-customresources)
+- [Kubernetes sample controller](https://github.com/kubernetes/sample-controller)

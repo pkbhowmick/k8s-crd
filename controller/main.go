@@ -37,7 +37,7 @@ import (
 type Controller struct {
 	// indexer is a thread safe store to store objects and their keys
 	indexer cache.Indexer
-	// queue represents a workqueue to maintain the events coming from kubernetes api server
+	// queue represents a controller to maintain the events coming from kubernetes api server
 	queue workqueue.RateLimitingInterface
 	// informer pops from queue to deliver to custom controller
 	informer cache.Controller
@@ -57,7 +57,7 @@ func NewController(indexer cache.Indexer, queue workqueue.RateLimitingInterface,
 	}
 }
 
-// processNextItem processes items from workqueue
+// processNextItem processes items from controller
 func (c *Controller) processNextItem() bool {
 	key, quit := c.queue.Get()
 	if quit {

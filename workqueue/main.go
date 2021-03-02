@@ -94,6 +94,9 @@ func (c *Controller) syncToStdout(key string) error {
 }
 
 func CreateDeploymentObj(obj *v1alpha1.KubeApi) *appsv1.Deployment {
+	if obj.Spec.Replicas == nil {
+		obj.Spec.Replicas = intPtr32(1)
+	}
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: obj.Name,

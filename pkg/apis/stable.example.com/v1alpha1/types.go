@@ -9,12 +9,14 @@ import (
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=kubeapis,singular=kubeapi,shortName=kapi,categories={}
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name=Age,type=date
-// +kubebuilder:printcolumn:JSONPath=".spec.deploymentName",name=Deployment,type=string
-// +kubebuilder:printcolumn:JSONPath=".spec.serviceName",name=Service,type=string
+// +kubebuilder:printcolumn:JSONPath=".status.deploymentName",name=Deployment,type=string
+// +kubebuilder:printcolumn:JSONPath=".status.serviceName",name=Service,type=string
+// +kubebuilder:printcolumn:JSONPath=".status.replicas",name=Replicas,type=integer
+// +kubebuilder:printcolumn:JSONPath=".status.phase",name=Status,type=string
 // +kubebuilder:subresources:status
 // +kubebuilder:storageversion
 // +genclient
-// +genclient:noStatus
+// +//genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type KubeApi struct {
@@ -34,8 +36,11 @@ type KubeApiSpec struct {
 	// +optional
 	Replicas *int32 `json:"replicas"`
 
+	// +optional
 	DeploymentName string `json:"deploymentName"`
-	ServiceName    string `json:"serviceName"`
+
+	// +optional
+	ServiceName string `json:"serviceName"`
 
 	// +kubebuilder:default=ClusterIP
 	ServiceType ServiceType `json:"serviceType"`
@@ -63,5 +68,10 @@ type KubeApiList struct {
 }
 
 type KubeApiStatus struct {
-	Phase string `json:"phase,omitempty"`
+	Phase              string             `json:"phase,omitempty"`
+	Conditions         []metav1.Condition `json:"conditions,omitempty"`
+	Replicas           int                `json:"replicas,omitempty"`
+	DeploymentName     string             `json:"deploymentName,omitempty"`
+	ServiceName        string             `json:"serviceName,omitempty"`
+	ObservedGeneration int32              `json:"observedGeneration,omitempty"`
 }

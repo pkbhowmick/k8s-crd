@@ -88,11 +88,6 @@ func (c *Controller) syncHandler(key string) error {
 	} else {
 		deepCopyObj := obj.(*v1alpha1.KubeApi).DeepCopy()
 
-		// Set default value for replica count
-		if deepCopyObj.Spec.Replicas == nil {
-			deepCopyObj.Spec.Replicas = intPtr32(1)
-		}
-
 		// Get deployment to check if it already exists
 		depl, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{})
 
@@ -129,7 +124,7 @@ func (c *Controller) syncHandler(key string) error {
 func CreateServiceObj(obj *v1alpha1.KubeApi) *v1.Service {
 	serviceObj := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.Spec.ServiceName,
+			Name: obj.Name,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(obj, v1alpha1.SchemeGroupVersion.WithKind("KubeApi")),
 			},

@@ -1,4 +1,4 @@
-package main
+package controller
 
 import (
 	"context"
@@ -226,7 +226,7 @@ func (c *Controller) runWorker() {
 	}
 }
 
-func main() {
+func Start() {
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")

@@ -127,8 +127,6 @@ spec:
                   - type
                   type: object
                 type: array
-              deploymentName:
-                type: string
               observedGeneration:
                 format: int32
                 type: integer
@@ -136,8 +134,6 @@ spec:
                 type: string
               replicas:
                 type: integer
-              serviceName:
-                type: string
             type: object
         required:
         - spec

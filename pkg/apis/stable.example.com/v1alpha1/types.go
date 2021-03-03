@@ -71,7 +71,5 @@ type KubeApiStatus struct {
 	Phase              string             `json:"phase,omitempty"`
 	Conditions         []metav1.Condition `json:"conditions,omitempty"`
 	Replicas           int                `json:"replicas,omitempty"`
-	DeploymentName     string             `json:"deploymentName,omitempty"`
-	ServiceName        string             `json:"serviceName,omitempty"`
 	ObservedGeneration int32              `json:"observedGeneration,omitempty"`
 }

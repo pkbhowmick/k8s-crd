@@ -3,4 +3,4 @@
 
 package v1alpha1
 
-//_ "k8s.io/code-generator"
+// _ "k8s.io/code-generator"

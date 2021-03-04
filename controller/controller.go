@@ -116,6 +116,9 @@ func (c *Controller) syncHandler(key string) error {
 				}
 				return false, nil
 			})
+			if err != nil {
+				return err
+			}
 			fmt.Printf("Deployment %q created\n", deployedObj.GetObjectMeta().GetName())
 			// Creating the service according to deployed object
 			serviceObj := NewService(deepCopyObj)
@@ -129,6 +132,9 @@ func (c *Controller) syncHandler(key string) error {
 				}
 				return false, nil
 			})
+			if err != nil {
+				return err
+			}
 			fmt.Printf("Service %q created\n", svc.GetObjectMeta().GetName())
 		} else {
 			return err

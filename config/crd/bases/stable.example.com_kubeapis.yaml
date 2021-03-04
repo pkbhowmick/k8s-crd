@@ -67,6 +67,8 @@ spec:
               replicas:
                 default: 1
                 format: int32
+                maximum: 20
+                minimum: 1
                 type: integer
               serviceName:
                 type: string
@@ -87,7 +89,6 @@ spec:
               phase:
                 type: string
               replicas:
-                description: Conditions         []metav1.Condition `json:"conditions"`
                 format: int32
                 type: integer
             required:

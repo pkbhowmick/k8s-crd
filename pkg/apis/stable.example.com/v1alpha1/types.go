@@ -35,6 +35,8 @@ type KubeApiSpec struct {
 
 	// +kubebuilder:default=1
 	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=20
 	Replicas *int32 `json:"replicas"`
 
 	// +optional
@@ -69,8 +71,6 @@ type KubeApiList struct {
 }
 
 type KubeApiStatus struct {
-	Phase string `json:"phase"`
-	//Conditions         []metav1.Condition `json:"conditions"`
-	Replicas int32 `json:"replicas"`
-	//ObservedGeneration int32              `json:"observedGeneration"`
+	Phase    string `json:"phase"`
+	Replicas int32  `json:"replicas"`
 }

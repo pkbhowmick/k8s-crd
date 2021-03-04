@@ -108,6 +108,9 @@ func (c *Controller) syncHandler(key string) error {
 			fmt.Printf("Service %q created\n", svc.GetObjectMeta().GetName())
 		}
 		oldObj, err := c.crdClient.StableV1alpha1().KubeApis(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 		oldObj.Status.Phase = "Ready"
 		oldObj.Status.Replicas = *deepCopyObj.Spec.Replicas
 		_, err = c.crdClient.StableV1alpha1().KubeApis(v1.NamespaceDefault).UpdateStatus(context.TODO(), oldObj, metav1.UpdateOptions{})

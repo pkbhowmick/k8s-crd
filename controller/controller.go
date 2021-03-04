@@ -7,28 +7,18 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
-
-	"k8s.io/apimachinery/pkg/util/runtime"
-
 	"github.com/pkbhowmick/k8s-crd/pkg/apis/stable.example.com/v1alpha1"
-
 	kubeapiClientset "github.com/pkbhowmick/k8s-crd/pkg/client/clientset/versioned"
-
-	"k8s.io/client-go/util/homedir"
-
 	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/apimachinery/pkg/fields"
-
-	"k8s.io/client-go/tools/clientcmd"
-
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	v1 "k8s.io/api/core/v1"
-
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 )
@@ -94,6 +84,7 @@ func (c *Controller) syncHandler(key string) error {
 		if err == nil {
 			// As err is nil, so deployment already exists, then update it with new replica count
 			depl.Spec.Replicas = deepCopyObj.Spec.Replicas
+			depl.Spec.Template.Spec.Containers[0].Image = deepCopyObj.Spec.Container.Image
 			updatedDepl, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Update(context.TODO(), depl, metav1.UpdateOptions{})
 			if err != nil {
 				return err
@@ -102,26 +93,32 @@ func (c *Controller) syncHandler(key string) error {
 		} else {
 			// As err is not nil, so deployment doesn't exist, then creating a new deployment
 
-			deployment := CreateDeploymentObj(deepCopyObj)
+			deployment := GetDeploymentObj(deepCopyObj)
 			deployedObj, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Create(context.TODO(), deployment, metav1.CreateOptions{})
 			if err != nil {
 				return err
 			}
 			fmt.Printf("Deployment %q created\n", deployedObj.GetObjectMeta().GetName())
+			// Creating the service according to deployed object
+			serviceObj := GetServiceObj(deepCopyObj)
+			svc, err := c.kClient.CoreV1().Services(v1.NamespaceDefault).Create(context.TODO(), serviceObj, metav1.CreateOptions{})
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Service %q created\n", svc.GetObjectMeta().GetName())
 		}
-
-		// Creating the service according to deployed object
-		serviceObj := CreateServiceObj(deepCopyObj)
-		svc, err := c.kClient.CoreV1().Services(v1.NamespaceDefault).Create(context.TODO(), serviceObj, metav1.CreateOptions{})
+		oldObj, err := c.crdClient.StableV1alpha1().KubeApis(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{})
+		oldObj.Status.Phase = "Ready"
+		oldObj.Status.Replicas = *deepCopyObj.Spec.Replicas
+		_, err = c.crdClient.StableV1alpha1().KubeApis(v1.NamespaceDefault).UpdateStatus(context.TODO(), oldObj, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Service %q created\n", svc.GetObjectMeta().GetName())
 	}
 	return nil
 }
 
-func CreateServiceObj(obj *v1alpha1.KubeApi) *v1.Service {
+func GetServiceObj(obj *v1alpha1.KubeApi) *v1.Service {
 	serviceObj := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: obj.Name,
@@ -145,7 +142,7 @@ func CreateServiceObj(obj *v1alpha1.KubeApi) *v1.Service {
 	return serviceObj
 }
 
-func CreateDeploymentObj(obj *v1alpha1.KubeApi) *appsv1.Deployment {
+func GetDeploymentObj(obj *v1alpha1.KubeApi) *appsv1.Deployment {
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: obj.Name,

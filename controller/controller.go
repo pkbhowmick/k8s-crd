@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/pkbhowmick/k8s-crd/pkg/apis/stable.example.com/v1alpha1"
 	kubeapiClientset "github.com/pkbhowmick/k8s-crd/pkg/client/clientset/versioned"
 	appsv1 "k8s.io/api/apps/v1"
@@ -79,9 +81,9 @@ func (c *Controller) syncHandler(key string) error {
 		deepCopyObj := obj.(*v1alpha1.KubeApi).DeepCopy()
 
 		// Get deployment to check if it already exists
-		depl, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{})
+		depl, getErr := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{})
 
-		if err == nil {
+		if getErr == nil {
 			// As err is nil, so deployment already exists, then update it with new replica count
 			depl.Spec.Replicas = deepCopyObj.Spec.Replicas
 			depl.Spec.Template.Spec.Containers[0].Image = deepCopyObj.Spec.Container.Image
@@ -90,8 +92,8 @@ func (c *Controller) syncHandler(key string) error {
 				return err
 			}
 			fmt.Printf("Deployment %q created\n", updatedDepl.GetObjectMeta().GetName())
-		} else {
-			// As err is not nil, so deployment doesn't exist, then creating a new deployment
+		} else if errors.IsNotFound(err) {
+			// As err is not nil and is not found error is true so deployment doesn't exist, then creating a new deployment
 
 			deployment := GetDeploymentObj(deepCopyObj)
 			deployedObj, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Create(context.TODO(), deployment, metav1.CreateOptions{})
@@ -106,6 +108,8 @@ func (c *Controller) syncHandler(key string) error {
 				return err
 			}
 			fmt.Printf("Service %q created\n", svc.GetObjectMeta().GetName())
+		} else {
+			return err
 		}
 		oldObj, err := c.crdClient.StableV1alpha1().KubeApis(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{})
 		if err != nil {

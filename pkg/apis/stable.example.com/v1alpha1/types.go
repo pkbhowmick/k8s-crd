@@ -13,18 +13,19 @@ import (
 // +kubebuilder:printcolumn:JSONPath=".status.serviceName",name=Service,type=string
 // +kubebuilder:printcolumn:JSONPath=".status.replicas",name=Replicas,type=integer
 // +kubebuilder:printcolumn:JSONPath=".status.phase",name=Status,type=string
-// +kubebuilder:subresources:status
+// +kubebuilder:subresource:status
 // +kubebuilder:storageversion
 // +genclient
-// +//genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type KubeApi struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   KubeApiSpec   `json:"spec"`
-	Status KubeApiStatus `json:"status,omitempty"`
+	Spec KubeApiSpec `json:"spec"`
+
+	// +optional
+	Status KubeApiStatus `json:"status"`
 }
 
 // KubeApiSpec Defines KubeApi Object spec
@@ -68,8 +69,8 @@ type KubeApiList struct {
 }
 
 type KubeApiStatus struct {
-	Phase              string             `json:"phase,omitempty"`
-	Conditions         []metav1.Condition `json:"conditions,omitempty"`
-	Replicas           int                `json:"replicas,omitempty"`
-	ObservedGeneration int32              `json:"observedGeneration,omitempty"`
+	Phase string `json:"phase"`
+	//Conditions         []metav1.Condition `json:"conditions"`
+	Replicas int32 `json:"replicas"`
+	//ObservedGeneration int32              `json:"observedGeneration"`
 }

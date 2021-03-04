@@ -35,11 +35,17 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    - jsonPath: .spec.deploymentName
+    - jsonPath: .status.deploymentName
       name: Deployment
       type: string
-    - jsonPath: .spec.serviceName
+    - jsonPath: .status.serviceName
       name: Service
+      type: string
+    - jsonPath: .status.replicas
+      name: Replicas
+      type: integer
+    - jsonPath: .status.phase
+      name: Status
       type: string
     name: v1alpha1
     schema:
@@ -87,21 +93,27 @@ spec:
                 type: string
             required:
             - container
-            - deploymentName
-            - serviceName
             - serviceType
             type: object
           status:
             properties:
               phase:
                 type: string
+              replicas:
+                description: Conditions         []metav1.Condition `json:"conditions"`
+                format: int32
+                type: integer
+            required:
+            - phase
+            - replicas
             type: object
         required:
         - spec
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      status: {}
 status:
   acceptedNames:
     kind: ""
@@ -109,22 +121,6 @@ status:
   conditions: []
   storedVersions: []
 
-```
-
-### Sample custom resource manifest file 
-```
-apiVersion: stable.example.com/v1alpha1
-kind: KubeApi
-metadata:
-  name: go-rest-api
-spec:
-  replicas: 2
-  serviceName: myapp-service
-  deploymentName: myapp-deployment
-  serviceType: NodePort
-  container:
-    image: pkbhowmick/go-rest-api:2.0.1
-    containerPort: 8080
 ```
  
 ### Kubebuilder markers

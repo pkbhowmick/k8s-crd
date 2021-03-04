@@ -7,12 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/pkbhowmick/k8s-crd/pkg/apis/stable.example.com/v1alpha1"
 	kubeapiClientset "github.com/pkbhowmick/k8s-crd/pkg/client/clientset/versioned"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -96,15 +95,27 @@ func (c *Controller) syncHandler(key string) error {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Deployment %q created\n", updatedDepl.GetObjectMeta().GetName())
+			fmt.Printf("Deployment %q updated\n", updatedDepl.GetObjectMeta().GetName())
 		} else if errors.IsNotFound(getErr) {
 			// As err is not nil and is not found error is true so deployment doesn't exist, then creating a new deployment
-
+			deepCopyObj.Status.Phase = "Pending"
+			_, err = c.crdClient.StableV1alpha1().KubeApis(v1.NamespaceDefault).UpdateStatus(context.TODO(), deepCopyObj, metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
 			deployment := NewDeployment(deepCopyObj)
 			deployedObj, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Create(context.TODO(), deployment, metav1.CreateOptions{})
 			if err != nil {
 				return err
 			}
+			err = wait.PollImmediate(50*time.Millisecond, 10*time.Second, func() (bool, error) {
+				if depObj, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{}); err == nil {
+					if depObj.Status.AvailableReplicas == *deepCopyObj.Spec.Replicas {
+						return true, nil
+					}
+				}
+				return false, nil
+			})
 			fmt.Printf("Deployment %q created\n", deployedObj.GetObjectMeta().GetName())
 			// Creating the service according to deployed object
 			serviceObj := NewService(deepCopyObj)
@@ -112,6 +123,12 @@ func (c *Controller) syncHandler(key string) error {
 			if err != nil {
 				return err
 			}
+			err = wait.PollImmediate(50*time.Millisecond, 5*time.Second, func() (bool, error) {
+				if _, err := c.kClient.CoreV1().Services(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{}); err == nil {
+					return true, nil
+				}
+				return false, nil
+			})
 			fmt.Printf("Service %q created\n", svc.GetObjectMeta().GetName())
 		} else {
 			return err

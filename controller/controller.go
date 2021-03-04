@@ -80,6 +80,11 @@ func (c *Controller) syncHandler(key string) error {
 	} else {
 		deepCopyObj := obj.(*v1alpha1.KubeApi).DeepCopy()
 
+		if deepCopyObj.DeletionTimestamp != nil {
+			fmt.Printf("KubeApi %q is going to be deleted\n", deepCopyObj.Name)
+			return nil
+		}
+
 		// Get deployment to check if it already exists
 		depl, getErr := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Get(context.TODO(), deepCopyObj.Name, metav1.GetOptions{})
 
@@ -92,17 +97,17 @@ func (c *Controller) syncHandler(key string) error {
 				return err
 			}
 			fmt.Printf("Deployment %q created\n", updatedDepl.GetObjectMeta().GetName())
-		} else if errors.IsNotFound(err) {
+		} else if errors.IsNotFound(getErr) {
 			// As err is not nil and is not found error is true so deployment doesn't exist, then creating a new deployment
 
-			deployment := GetDeploymentObj(deepCopyObj)
+			deployment := NewDeployment(deepCopyObj)
 			deployedObj, err := c.kClient.AppsV1().Deployments(v1.NamespaceDefault).Create(context.TODO(), deployment, metav1.CreateOptions{})
 			if err != nil {
 				return err
 			}
 			fmt.Printf("Deployment %q created\n", deployedObj.GetObjectMeta().GetName())
 			// Creating the service according to deployed object
-			serviceObj := GetServiceObj(deepCopyObj)
+			serviceObj := NewService(deepCopyObj)
 			svc, err := c.kClient.CoreV1().Services(v1.NamespaceDefault).Create(context.TODO(), serviceObj, metav1.CreateOptions{})
 			if err != nil {
 				return err
@@ -125,7 +130,7 @@ func (c *Controller) syncHandler(key string) error {
 	return nil
 }
 
-func GetServiceObj(obj *v1alpha1.KubeApi) *v1.Service {
+func NewService(obj *v1alpha1.KubeApi) *v1.Service {
 	serviceObj := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: obj.Name,
@@ -149,7 +154,7 @@ func GetServiceObj(obj *v1alpha1.KubeApi) *v1.Service {
 	return serviceObj
 }
 
-func GetDeploymentObj(obj *v1alpha1.KubeApi) *appsv1.Deployment {
+func NewDeployment(obj *v1alpha1.KubeApi) *appsv1.Deployment {
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: obj.Name,

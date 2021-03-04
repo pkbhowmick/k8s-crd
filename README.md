@@ -1,6 +1,8 @@
 # KubeApi
 KubeApi is a Kubernetes Custom Resource which runs REST API server in Kubernetes. 
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/pkbhowmick/k8s-crd)](https://goreportcard.com/report/github.com/pkbhowmick/k8s-crd)
+
 
 
 ### Available commands
